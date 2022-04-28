@@ -100,7 +100,6 @@ def buscarValores(url):
     html = response.read().decode('utf-8')
     soup = BeautifulSoup(html, 'html.parser')
 
-    cards = []
     card = {}
 
     #Pegar o anuncio
@@ -130,6 +129,75 @@ def buscarValores(url):
     image = anuncio.find('div', {'class': 'image-card'}).img
     urlretrieve(image.get('src'), 'imagens/' + image.get('src').split('/')[-1])
 
+def buscarValoresPagina(url):
+    response = urlopen(url)
+    html = response.read().decode('utf-8')
+    soup = BeautifulSoup(html, 'html.parser')
+
+    cards = []
+    anuncios = soup.find('div', {"id": "container-cards"}).findAll('div', class_="card")
+    for anuncio in anuncios:
+        card = {}
+
+        card['value'] = anuncio.find('p', {'class': 'txt-value'}).getText()
+
+        infos = anuncio.find('div', {'class': 'body-card'}).findAll('p')
+        for info in infos:
+            card[info.get('class')[0].split('-')[-1]] = info.get_text()
+
+        items = anuncio.find('div', {'class': 'body-card'}).ul.findAll('li')
+        items.pop()
+        acessorios = []
+        for item in items:
+            acessorios.append(item.get_text().replace('► ', ''))
+        card['items'] = acessorios
+
+        cards.append(card)
+
+        image = anuncio.find('div', {'class': 'image-card'}).img
+        urlretrieve(image.get('src'), 'imagens/' + image.get('src').split('/')[-1])
+
+    dataset = pd.DataFrame(cards)
+    dataset.to_csv('data/dataset.csv', sep=';', index=False, encoding='utf-8-sig')
+
+
+def buscarTodoSite(url):
+    response = urlopen(url)
+    html = response.read().decode('utf-8')
+    soup = BeautifulSoup(html, 'html.parser')
+
+    total_paginas = int(soup.find('span', class_="info-pages").get_text().split()[-1])
+
+    for i in range(total_paginas):
+        response = urlopen(url+'?page='+str(i+1))
+        html = response.read().decode('utf-8')
+        soup = BeautifulSoup(html, 'html.parser')
+
+        cards = []
+        anuncios = soup.find('div', {"id": "container-cards"}).findAll('div', class_="card")
+        for anuncio in anuncios:
+            card = {}
+
+            card['value'] = anuncio.find('p', {'class': 'txt-value'}).getText()
+
+            infos = anuncio.find('div', {'class': 'body-card'}).findAll('p')
+            for info in infos:
+                card[info.get('class')[0].split('-')[-1]] = info.get_text()
+
+            items = anuncio.find('div', {'class': 'body-card'}).ul.findAll('li')
+            items.pop()
+            acessorios = []
+            for item in items:
+                acessorios.append(item.get_text().replace('► ', ''))
+            card['items'] = acessorios
+
+            cards.append(card)
+
+            image = anuncio.find('div', {'class': 'image-card'}).img
+            urlretrieve(image.get('src'), 'imagens/' + image.get('src').split('/')[-1])
+
+    dataset = pd.DataFrame(cards)
+    dataset.to_csv('data/dataset.csv', sep=';', index=False, encoding='utf-8-sig')
 
 
 
@@ -142,4 +210,6 @@ if __name__ == '__main__':
     #executar2(url)
     #executar3(url)
     #executar4(url)
-    buscarValores(url)
+    #buscarValores(url)
+    #buscarValoresPagina(url)
+    buscarTodoSite(url)
